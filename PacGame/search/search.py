@@ -230,7 +230,44 @@ def nullHeuristic(state, problem=None):
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    #-------------------------------------------------------------------------------------------------------------------------------
+    actionsToPerform = list()       #... Saves Direction to follow to reach goal
+    visitedStates = list()          #... Saves all visited nodes uptil Now So doesn't expand previous visited nodes
+    
+    fringe = util.PriorityQueue()           #... Use PriorityQueue from util (cost as priority)
+    
+    "*** Push based on priority h(n) = cost + f(n)***"
+    fringe.push((problem.getStartState(), actionsToPerform, visitedStates), 0 + heuristic(problem.getStartState(), problem))          #... Push item and cost of 0 for first node
+    
+    while not fringe.isEmpty() :
+    
+        #Get least priority Element of Priorityqueue
+        currentState, actionsToPerform, visitedStates = fringe.pop()
+        
+        if problem.isGoalState(currentState):           #... Check if State is Goal return actions
+            
+            return actionsToPerform + [direction]
+        
+        visitedStates.append(currentState)          #... Append State to visited
+        
+        for nodeState, direction, cost in problem.getSuccessors(currentState):            #... Iterate through childs of state    
+        
+            if nodeState in visitedStates :         #... If State is already visited move to next successor
+                
+                continue
+                
+            if problem.isGoalState(nodeState) :     #... Check for Final States
+                
+                return actionsToPerform + [direction]
+    
+            "*** Push Element to fringe for future successor h(n) = cost + f(n)***"
+            fringe.push((nodeState, actionsToPerform + [direction], visitedStates),cost + heuristic(nodeState, problem))           #... Insert cost got by priority
+            
+            
+    return actionsToPerform   
+    
+    #-------------------------------------------------------------------------------------------------------------------------------
+    #util.raiseNotDefined()
 
 
 # Abbreviations

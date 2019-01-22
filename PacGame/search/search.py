@@ -91,25 +91,25 @@ def depthFirstSearch(problem):
     "*** DFS implementation using Stack saving state,path and visited Nodes ***"
     #--------------------------------------------------------------------------------------------------------------
             
-    pathToGoal = list()             #... Saves Path to Reach that State(Sequence of States)
+    #pathToGoal = list()             #... Saves Path to Reach that State(Sequence of States)
     actionsToPerform = list()       #... Saves Direction to follow to reach goal
     visitedStates = list()          #... Saves all visited nodes uptil Now So doesn't expand previous visited nodes
     
     fringe = util.Stack()           #... Use Stack from util file
     
-    "*** Stack Stores Triplet as State, path from Start to this and Visited States ***"
-    fringe.push((problem.getStartState(), pathToGoal, actionsToPerform, visitedStates))
+    "*** Stack Stores Doublet as State, path from Start to this  ***"
+    fringe.push((problem.getStartState(), actionsToPerform))
     
     #Using Iterative dfs
     
     while not fringe.isEmpty():
     
         #Get Top Element of Stack
-        currentState, pathToGoal, actionsToPerform, visitedStates = fringe.pop()
+        currentState, actionsToPerform = fringe.pop()
         
         if problem.isGoalState(currentState):           #... Check if State is Goal return actions
             
-            return actionsToPerform + [direction]
+            return actionsToPerform
         
         visitedStates.append(currentState)          #... Append State to visited
         
@@ -118,19 +118,21 @@ def depthFirstSearch(problem):
             if nodeState in visitedStates :         #... If State is already visited move to next successor
                 
                 continue
-                
+            '''
             if problem.isGoalState(nodeState) :     #... Check for Final States
                 
                 return actionsToPerform + [direction]
-    
+            '''
             "*** Push Element to fringe for future successor ***"
-            fringe.push((nodeState, pathToGoal + [nodeState], actionsToPerform + [direction], visitedStates))
+            fringe.push((nodeState, actionsToPerform + [direction]))
             
             
     return actionsToPerform
     
     #-------------------------------------------------------------------------------------------------------------------------------
     #util.raiseNotDefined()
+     
+"***Major Difference between DFS and BFS is time we add nodes to visited. We know that node appearing first in BFS is added but DFS add only when it has seen one***"
      
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
@@ -143,34 +145,36 @@ def breadthFirstSearch(problem):
     
     fringe = util.Queue()           #... Use Queue from util file
     
-    "*** Queue Stores Triplet as State, path from Start to this and Visited States ***"
-    fringe.push((problem.getStartState(), actionsToPerform, visitedStates))
+    visitedStates.append(problem.getStartState())            #... Push the start state first
+    
+    "*** Queue Stores Doublet as State, path from Start to this ***"
+    fringe.push((problem.getStartState(), actionsToPerform))
     
     #Using Iterative bfs
     
     while not fringe.isEmpty():
     
         #Get back Element of queue
-        currentState, actionsToPerform, visitedStates = fringe.pop()
+        currentState, actionsToPerform = fringe.pop()
         
         if problem.isGoalState(currentState):           #... Check if State is Goal return actions
             
-            return actionsToPerform + [direction]
-        
-        visitedStates.append(currentState)          #... Append State to visited
-        
+            return actionsToPerform
+                
         for nodeState, direction, cost in problem.getSuccessors(currentState):            #... Iterate through childs of state    
         
             if nodeState in visitedStates :         #... If State is already visited move to next successor
                 
                 continue
-                
+
+            visitedStates.append(nodeState)          #... Append State to visited
+            '''        
             if problem.isGoalState(nodeState) :     #... Check for Final States
                 
                 return actionsToPerform + [direction]
-    
+            '''
             "*** Push Element to fringe for future successor ***"
-            fringe.push((nodeState, actionsToPerform + [direction], visitedStates))
+            fringe.push((nodeState, actionsToPerform + [direction]))
             
             
     return actionsToPerform        
@@ -183,38 +187,47 @@ def uniformCostSearch(problem):
     
     #-------------------------------------------------------------------------------------------------------------------------------
     actionsToPerform = list()       #... Saves Direction to follow to reach goal
+    nodePath = dict()               #... Dictionary to save path uptil node
     visitedStates = list()          #... Saves all visited nodes uptil Now So doesn't expand previous visited nodes
     
     fringe = util.PriorityQueue()           #... Use PriorityQueue from util (cost as priority)
     
     "*** Push based on priority ***"
-    fringe.push((problem.getStartState(), actionsToPerform, visitedStates), 0)          #... Push item and cost of 0 for first node
+    fringe.push(problem.getStartState(), 0)          #... Push item and cost of 0 for first node
+    nodePath[problem.getStartState()] = (list(), 0)          #... Stores node as key and it's Path to Reach as value
     
     while not fringe.isEmpty() :
     
         #Get least priority Element of Priorityqueue
-        currentState, actionsToPerform, visitedStates = fringe.pop()
+        currentState = fringe.pop()
+        actionsToPerform, costTillNode = nodePath[currentState]       #... Get the Current Path
         
         if problem.isGoalState(currentState):           #... Check if State is Goal return actions
             
-            return actionsToPerform + [direction]
+            return actionsToPerform
         
         visitedStates.append(currentState)          #... Append State to visited
         
         for nodeState, direction, cost in problem.getSuccessors(currentState):            #... Iterate through childs of state    
         
+        
+            g_n = cost + costTillNode               #... Total Cost from Start to this node
+            
             if nodeState in visitedStates :         #... If State is already visited move to next successor
                 
                 continue
-                
-            if problem.isGoalState(nodeState) :     #... Check for Final States
-                
-                return actionsToPerform + [direction]
-    
+            
             "*** Push Element to fringe for future successor ***"
-            fringe.push((nodeState, actionsToPerform + [direction], visitedStates), cost)           #... Insert cost got by priority
+            fringe.update(nodeState, g_n)           #... Insert cost got by priority
             
-            
+            "*** Update Path if Cost is less else previous cost and path are not update ***"
+            if nodeState in nodePath :                
+               _, costState = nodePath[nodeState]
+               if costState > g_n :
+                    nodePath[nodeState] = (actionsToPerform + [direction], g_n)        #... Update the Direction to Reach node
+            else :
+                    nodePath[nodeState] = (actionsToPerform + [direction], g_n)        #... Insert node to dictionary
+                
     return actionsToPerform   
     
     #-------------------------------------------------------------------------------------------------------------------------------
@@ -227,43 +240,56 @@ def nullHeuristic(state, problem=None):
     """
     return 0
 
+
+#h_n is added only to total computational cost ,h_n is not added like g_n till node it's fixed
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
     "*** YOUR CODE HERE ***"
+    
     #-------------------------------------------------------------------------------------------------------------------------------
     actionsToPerform = list()       #... Saves Direction to follow to reach goal
+    nodePath = dict()               #... Dictionary to save path uptil node
     visitedStates = list()          #... Saves all visited nodes uptil Now So doesn't expand previous visited nodes
     
     fringe = util.PriorityQueue()           #... Use PriorityQueue from util (cost as priority)
     
-    "*** Push based on priority h(n) = cost + f(n)***"
-    fringe.push((problem.getStartState(), actionsToPerform, visitedStates), 0 + heuristic(problem.getStartState(), problem))          #... Push item and cost of 0 for first node
+    "*** Push based on priority ***"
+    fringe.push(problem.getStartState(), 0)          #... Push item and cost of 0 for first node
+    nodePath[problem.getStartState()] = (list(), 0)          #... Stores node as key and it's Path to Reach as value
     
     while not fringe.isEmpty() :
     
         #Get least priority Element of Priorityqueue
-        currentState, actionsToPerform, visitedStates = fringe.pop()
+        currentState = fringe.pop()
+        actionsToPerform, costTillNode = nodePath[currentState]       #... Get the Current Path
         
-        if problem.isGoalState(currentState):           #... Check if State is Goal return actions
+        if problem.isGoalState(currentState):           #... Check if State is Goal and return actions
             
-            return actionsToPerform + [direction]
+            return actionsToPerform
         
         visitedStates.append(currentState)          #... Append State to visited
         
         for nodeState, direction, cost in problem.getSuccessors(currentState):            #... Iterate through childs of state    
         
+            "*** Get Total Cost f_n = g_n + h_n ***"
+            g_n = cost + costTillNode               #... Total Cost from Start to this node
+            f_n = g_n + heuristic(nodeState, problem)
+            
             if nodeState in visitedStates :         #... If State is already visited move to next successor
                 
                 continue
-                
-            if problem.isGoalState(nodeState) :     #... Check for Final States
-                
-                return actionsToPerform + [direction]
-    
-            "*** Push Element to fringe for future successor h(n) = cost + f(n)***"
-            fringe.push((nodeState, actionsToPerform + [direction], visitedStates),cost + heuristic(nodeState, problem))           #... Insert cost got by priority
             
+            "*** Push Element to fringe for future successor ***"
+            fringe.update(nodeState, f_n)           #... Insert cost got by priority
             
+            "*** Update Path if Cost is less else previous cost and path are not update ***"
+            if nodeState in nodePath :                
+               _, costState = nodePath[nodeState]
+               if costState > g_n :
+                    nodePath[nodeState] = (actionsToPerform + [direction], g_n)        #... Update the Direction to Reach node
+            else :
+                    nodePath[nodeState] = (actionsToPerform + [direction], g_n)        #... Insert node to dictionary
+                
     return actionsToPerform   
     
     #-------------------------------------------------------------------------------------------------------------------------------

@@ -41,6 +41,8 @@ import util
 import time
 import search
 
+from createGraph import GraphMST
+
 class GoWestAgent(Agent):
     "An agent that goes West until it can't."
 
@@ -288,6 +290,7 @@ class CornersProblem(search.SearchProblem):
         # Please add any code here which you would like to use
         # in initializing the problem
         "*** YOUR CODE HERE ***"
+        
 
     def getStartState(self):
         """
@@ -295,14 +298,24 @@ class CornersProblem(search.SearchProblem):
         space)
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        
+        #... Check if starting Position is one of the corner
+        visitedCorners = ()
+        if self.startingPosition in self.corners :
+                visitedCorners = visitedCorners + ( self.startingPosition, )
+                        
+        return (self.startingPosition, visitedCorners)        #... Starting Position of Pacman and visited Corners
+        #util.raiseNotDefined()
 
     def isGoalState(self, state):
         """
         Returns whether this search state is a goal state of the problem.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        
+        "*** Check if all Corners are covered or not ***"
+        return len(state[1]) == len(self.corners)            #... Return True if all corners are covered else returns false
+        #util.raiseNotDefined()
 
     def getSuccessors(self, state):
         """
@@ -325,6 +338,23 @@ class CornersProblem(search.SearchProblem):
             #   hitsWall = self.walls[nextx][nexty]
 
             "*** YOUR CODE HERE ***"
+            '''
+            A search state in this problem is a tuple ( pacmanPosition, visitedNodes ) where
+                pacmanPosition: a tuple (x,y) of integers specifying Pacman's position
+                visitedNodes:       a list of visited Corners, specifying remaining corners
+            '''
+            x,y = state[0]
+            dx, dy = Actions.directionToVector(action)
+            nextx, nexty = int(x + dx), int(y + dy)
+            if not self.walls[nextx][nexty]:
+                nextState = (nextx, nexty)
+                visitedCorners = state[1]         #... Just Copy the Values
+                "*** Check if next State is Corner if then add that corner to visited ***"            
+                if nextState in self.corners :
+                    if nextState not in visitedCorners :
+                        visitedCorners = visitedCorners + ( nextState, )
+                        #print visitedCorners
+                successors.append( ((nextState, visitedCorners), action, 1) )           #... Insert State,Corner, action and path cost as 1
 
         self._expanded += 1 # DO NOT CHANGE
         return successors
@@ -360,7 +390,23 @@ def cornersHeuristic(state, problem):
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
 
     "*** YOUR CODE HERE ***"
-    return 0 # Default to trivial solution
+    '''
+         By Relaxation of Walls and creating Graph of pacman and unvisited Corners
+         We can min cost path consisting of all vertices as travelSalesman Problem create
+         minimum Spanning Tree
+    '''
+    
+    visitedCorners = list(state[1])
+    nodesGraph = []
+    
+    for corner in corners:
+        if corner not in visitedCorners:
+            nodesGraph.append(corner)
+    
+    nodesGraph.append(state[0])  
+    Obj = GraphMST(nodesGraph)
+              
+    return Obj.primMST() # Default to trivial solution
 
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
@@ -454,7 +500,16 @@ def foodHeuristic(state, problem):
     """
     position, foodGrid = state
     "*** YOUR CODE HERE ***"
-    return 0
+    
+    "*** I will use similar heurestic as Corners agent finding MST for all points of food and state ***"
+    nodesGraph = foodGrid.asList()
+    nodesGraph.append(position)
+    
+    Obj = GraphMST(nodesGraph)
+              
+    return Obj.primMST()
+    
+    #return 0
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"
@@ -485,6 +540,8 @@ class ClosestDotSearchAgent(SearchAgent):
         problem = AnyFoodSearchProblem(gameState)
 
         "*** YOUR CODE HERE ***"
+        "*** As cost of each path is 1 bfs or ucs both could best option ***"
+        return search.bfs(problem)
         util.raiseNotDefined()
 
 class AnyFoodSearchProblem(PositionSearchProblem):
@@ -518,10 +575,12 @@ class AnyFoodSearchProblem(PositionSearchProblem):
         The state is Pacman's position. Fill this in with a goal test that will
         complete the problem definition.
         """
-        x,y = state
-
+        x,y = state        
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        
+        "*** AnyFood eaten satisfys if state is at food return true ***"
+        return self.food[x][y]
+        #util.raiseNotDefined()
 
 def mazeDistance(point1, point2, gameState):
     """

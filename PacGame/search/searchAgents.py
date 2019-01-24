@@ -40,6 +40,7 @@ from game import Actions
 import util
 import time
 import search
+import sys
 
 from createGraph import GraphMST
 
@@ -290,6 +291,7 @@ class CornersProblem(search.SearchProblem):
         # Please add any code here which you would like to use
         # in initializing the problem
         "*** YOUR CODE HERE ***"
+        self.startingGameState = startingGameState
         
 
     def getStartState(self):
@@ -391,9 +393,8 @@ def cornersHeuristic(state, problem):
 
     "*** YOUR CODE HERE ***"
     '''
-         By Relaxation of Walls and creating Graph of pacman and unvisited Corners
-         We can min cost path consisting of all vertices as travelSalesman Problem create
-         minimum Spanning Tree
+         Cost of position to corner is always judged by max distance to cover
+         So I am calculating mazeDistance of points and choosing max of it
     '''
     
     visitedCorners = list(state[1])
@@ -403,10 +404,20 @@ def cornersHeuristic(state, problem):
         if corner not in visitedCorners:
             nodesGraph.append(corner)
     
-    nodesGraph.append(state[0])  
-    Obj = GraphMST(nodesGraph)
-              
-    return Obj.primMST() # Default to trivial solution
+    maxPathLength = list()
+    position = state[0]
+    
+    if len(nodesGraph) > 0:
+        for point in nodesGraph:
+            pathLength = mazeDistance(position, point, problem.startingGameState)
+            #pathLength = ((position[0]-point[0])**2 + (position[1]-point[1])**2)**0.5
+            #pathLength = abs(position[0] - point[0]) + abs(position[1] - point[1])
+            maxPathLength.append(pathLength)
+        
+        return max(maxPathLength)   
+    else:
+        return 0
+    
 
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
@@ -501,15 +512,22 @@ def foodHeuristic(state, problem):
     position, foodGrid = state
     "*** YOUR CODE HERE ***"
     
-    "*** I will use similar heurestic as Corners agent finding MST for all points of food and state ***"
+    "*** I will use max of all possible distance to cover from position to food ***"
+    
+    #... It represents how far is pacman from finishing goal
     nodesGraph = foodGrid.asList()
-    nodesGraph.append(position)
+    maxPathLength = list()
     
-    Obj = GraphMST(nodesGraph)
-              
-    return Obj.primMST()
-    
-    #return 0
+    if len(nodesGraph) > 0:
+        for point in nodesGraph :
+        
+            pathLength = mazeDistance(position, point, problem.startingGameState)
+            #pathLength = abs(position[0] - point[0]) + abs(position[1] - point[1])
+            maxPathLength.append(pathLength)
+            
+        return max(maxPathLength)
+    else:        
+        return 0
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"

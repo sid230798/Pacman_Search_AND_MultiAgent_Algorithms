@@ -91,7 +91,6 @@ def depthFirstSearch(problem):
     "*** DFS implementation using Stack saving state,path and visited Nodes ***"
     #--------------------------------------------------------------------------------------------------------------
             
-    #pathToGoal = list()             #... Saves Path to Reach that State(Sequence of States)
     actionsToPerform = list()       #... Saves Direction to follow to reach goal
     visitedStates = list()          #... Saves all visited nodes uptil Now So doesn't expand previous visited nodes
     
@@ -118,11 +117,7 @@ def depthFirstSearch(problem):
             if nodeState in visitedStates :         #... If State is already visited move to next successor
                 
                 continue
-            '''
-            if problem.isGoalState(nodeState) :     #... Check for Final States
-                
-                return actionsToPerform + [direction]
-            '''
+            
             "*** Push Element to fringe for future successor ***"
             fringe.push((nodeState, actionsToPerform + [direction]))
             
@@ -139,7 +134,7 @@ def breadthFirstSearch(problem):
     "*** YOUR CODE HERE ***"
     
     #-------------------------------------------------------------------------------------------------------------------------------
-    #pathToGoal = list()             #... Saves Path to Reach that State(Sequence of States)
+
     actionsToPerform = list()       #... Saves Direction to follow to reach goal
     visitedStates = list()          #... Saves all visited nodes uptil Now So doesn't expand previous visited nodes
     
@@ -168,11 +163,7 @@ def breadthFirstSearch(problem):
                 continue
 
             visitedStates.append(nodeState)          #... Append State to visited
-            '''        
-            if problem.isGoalState(nodeState) :     #... Check for Final States
-                
-                return actionsToPerform + [direction]
-            '''
+            
             "*** Push Element to fringe for future successor ***"
             fringe.push((nodeState, actionsToPerform + [direction]))
             

@@ -42,8 +42,6 @@ import time
 import search
 import sys
 
-from createGraph import GraphMST
-
 class GoWestAgent(Agent):
     "An agent that goes West until it can't."
 
@@ -291,7 +289,7 @@ class CornersProblem(search.SearchProblem):
         # Please add any code here which you would like to use
         # in initializing the problem
         "*** YOUR CODE HERE ***"
-        self.startingGameState = startingGameState
+        self.startingGameState = startingGameState  #... Required for huerestic
         
 
     def getStartState(self):
@@ -343,7 +341,7 @@ class CornersProblem(search.SearchProblem):
             '''
             A search state in this problem is a tuple ( pacmanPosition, visitedNodes ) where
                 pacmanPosition: a tuple (x,y) of integers specifying Pacman's position
-                visitedNodes:       a list of visited Corners, specifying remaining corners
+                visitedNodes:    tuples of visited Corners, specifying remaining corners
             '''
             x,y = state[0]
             dx, dy = Actions.directionToVector(action)
@@ -404,17 +402,22 @@ def cornersHeuristic(state, problem):
         if corner not in visitedCorners:
             nodesGraph.append(corner)
     
-    maxPathLength = list()
+    maxPathLength = 0
     position = state[0]
     
+    #... If number of unvisited corners are greater than 0 calaculate maze distance for all of them
     if len(nodesGraph) > 0:
         for point in nodesGraph:
-            pathLength = mazeDistance(position, point, problem.startingGameState)
-            #pathLength = ((position[0]-point[0])**2 + (position[1]-point[1])**2)**0.5
-            #pathLength = abs(position[0] - point[0]) + abs(position[1] - point[1])
-            maxPathLength.append(pathLength)
         
-        return max(maxPathLength)   
+            "*** Checked using maze distance, manhatten distance and eucledian but maze distance gives best result ***"
+            pathLength = len(mazeDistance(position, point, problem.startingGameState))
+            #pathLength = abs(position[0] - point[0]) + abs(position[1] - point[1])
+            #... Check for max length
+            if pathLength >= maxPathLength:
+                maxPathLength = pathLength 
+        
+        return maxPathLength   
+    #... If goal state is reache return 0 i.e all corners are visited    
     else:
         return 0
     
@@ -440,7 +443,7 @@ class FoodSearchProblem:
         self.startingGameState = startingGameState
         self._expanded = 0 # DO NOT CHANGE
         self.heuristicInfo = {} # A dictionary for the heuristic to store information
-
+        
     def getStartState(self):
         return self.start
 
@@ -514,21 +517,103 @@ def foodHeuristic(state, problem):
     
     "*** I will use max of all possible distance to cover from position to food ***"
     
-    #... It represents how far is pacman from finishing goal
-    nodesGraph = foodGrid.asList()
-    maxPathLength = list()
+    '''
+    Trying to Minimize time for calculating heurestic.
+        1. Run first time and store path for each food.
+        2. Store path for all its legal suucessors to reduce computation
+    '''
     
+    
+    #print "For Node : "+str(position)
+    nodesGraph = foodGrid.asList()          #... NodesGraph contains list of food position
+    maxPathLength = 0
+    
+    #... Revictionary used to save opposite direction
+    revDictionary = dict()
+    revDictionary[Directions.NORTH] = Directions.SOUTH
+    revDictionary[Directions.SOUTH] = Directions.NORTH
+    revDictionary[Directions.EAST] = Directions.WEST   
+    revDictionary[Directions.WEST] = Directions.EAST
+    
+    #print "For this Position : "+str(position)
+    
+    #... Check for Goal States
     if len(nodesGraph) > 0:
-        for point in nodesGraph :
-        
-            pathLength = mazeDistance(position, point, problem.startingGameState)
-            #pathLength = abs(position[0] - point[0]) + abs(position[1] - point[1])
-            maxPathLength.append(pathLength)
-            
-        return max(maxPathLength)
-    else:        
-        return 0
 
+        #... For First iteration initialize each food with dictionary
+        if len(problem.heuristicInfo) == 0:
+            #print "Position : "+str(position)
+            for point in nodesGraph:
+            
+                "Create Dictionary for each food point"
+                problem.heuristicInfo[point] = {}
+                #print "Point Added Initially : "+str(point)
+                
+                "*** Calculate mazeDistance for each of them ***"
+                path = mazeDistance(position, point, problem.startingGameState)
+                
+                "*** Insert that path at correct place ***"
+                problem.heuristicInfo[point][position] = path
+                #print "Done"
+            "*** If food is present at start add empty path ***"
+            problem.heuristicInfo[position] = dict()
+            problem.heuristicInfo[position][position] = []        
+                            
+        "*** Get the maxDistance from all food position ***"
+        for point in nodesGraph:
+
+            "*** IF POINT IS PRESENT TAKE THE MAXIMUM MAZEDISTANCE ELSE CALCULATE DISTANCE***"    
+            if position in problem.heuristicInfo[point]:
+                pathLength = len(problem.heuristicInfo[point][position])
+            else:
+                #print "This position is not yet done : "+str(position) + " "+str(point)
+                path = mazeDistance(position, point, problem.startingGameState)
+                problem.heuristicInfo[point][position] = path
+                pathLength = len(path)
+            #... Check for max length
+            if pathLength >= maxPathLength :
+                maxPathLength = pathLength
+        
+        "Insert all path from its Succesors because we know it's among this point next will be chosen"
+        for direction in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
+            x,y = position
+            dx, dy = Actions.directionToVector(direction)
+            nextx, nexty = int(x + dx), int(y + dy)
+            if not problem.walls[nextx][nexty]:
+            
+                #print "Neighbours Added : "+str((nextx,nexty))
+                "For all Legal Directions insert point in dictionary"
+                for point in problem.heuristicInfo:
+                    
+                    if position in problem.heuristicInfo[point]:
+                        path =  problem.heuristicInfo[point][position]
+                    else:
+                        #print "This position is not yet done : "+str(position) + " "+str(point)
+                        path = mazeDistance(position, point, problem.startingGameState)
+                        problem.heuristicInfo[point][position] = path
+                        
+                    if (nextx, nexty) not in problem.heuristicInfo[point]:
+                    
+                        "Append path if same path is followed else add a extra path"
+                        
+                        if len(path) == 0:
+                            problem.heuristicInfo[point][(nextx,nexty)] = [revDictionary[direction]]
+                            continue
+                            
+                        if path[0] == direction :
+                            problem.heuristicInfo[point][(nextx,nexty)] = path[1:]
+                        else:
+                            problem.heuristicInfo[point][(nextx,nexty)] = [revDictionary[direction]] + path
+
+                    else:
+                        break
+                    
+        #print "-----------------------"
+        return maxPathLength
+                
+    else:
+        return 0
+    
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"
     def registerInitialState(self, state):
@@ -560,7 +645,7 @@ class ClosestDotSearchAgent(SearchAgent):
         "*** YOUR CODE HERE ***"
         "*** As cost of each path is 1 bfs or ucs both could best option ***"
         return search.bfs(problem)
-        util.raiseNotDefined()
+        #util.raiseNotDefined()
 
 class AnyFoodSearchProblem(PositionSearchProblem):
     """
@@ -616,4 +701,4 @@ def mazeDistance(point1, point2, gameState):
     assert not walls[x1][y1], 'point1 is a wall: ' + str(point1)
     assert not walls[x2][y2], 'point2 is a wall: ' + str(point2)
     prob = PositionSearchProblem(gameState, start=point1, goal=point2, warn=False, visualize=False)
-    return len(search.bfs(prob))
+    return search.bfs(prob)

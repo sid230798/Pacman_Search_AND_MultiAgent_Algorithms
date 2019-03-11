@@ -12,17 +12,17 @@ Purpose :-
 
 import sys
 import HillClimb
-import collections
+
 
 if __name__ == '__main__' :
 
 	#Reading Input from file
-	hill_climb = open('TspInput.txt', 'r')
+	hill_climb = open(sys.argv[1], 'r')
 
 	# This dictionary saves elements as City name ,(x,y)	
-	cityDict = dict()
+	cityDict = list()
 	
-	for line in hill_climb :
+	for index, line in enumerate(hill_climb) :
 	
 		#Naming cities with capital Letters
 		count = 65
@@ -36,13 +36,14 @@ if __name__ == '__main__' :
 			xtuple = (float(cord),)
 			
 			#Create Dictionary as city name and it's coordinates
-			if chr(count) in cityDict:
-				cityDict[chr(count)] = cityDict[chr(count)] + xtuple
+			if index == 1:
+				cityDict[count-65] = (chr(count), cityDict[count-65][1] + xtuple)
 			else:
-				cityDict[chr(count)] = xtuple
+				cityDict.append((chr(count), xtuple))
 				
 			count += 1
 	
-	cityDict = collections.OrderedDict(sorted(cityDict.items()))
-	print cityDict
-	HillClimb.getSolution(cityDict)
+	#cityDict = collections.OrderedDict(sorted(cityDict.items()))
+	#print cityDict
+	HillClimb.hillClimb(cityDict)
+	#SimulatedAnnealing.simulateAnnealing(cityDict)

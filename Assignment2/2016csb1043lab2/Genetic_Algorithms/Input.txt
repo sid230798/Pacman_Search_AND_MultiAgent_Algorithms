@@ -1,0 +1,10 @@
+START_LOCATION 0 0
+MAX_GEN 100
+RANDOM_SEED 1
+CUSTOM_NO X_INPUT Y_INPUT
+1           0.0     0.0
+2           1.0     2
+3           2       0
+4           0       1
+5           2       1
+6           1       0
